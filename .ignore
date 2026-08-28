@@ -1,0 +1,3 @@
+# Ignore .git folder in telescope searches, which I have configured to search 
+# hidden files.
+.git

@@ -1,6 +1,6 @@
 #include <stdio.h>
 
 int main() {
-  printf("Hello from i2c!\n");
+  printf("Hello from my i2c example code!\n");
   return 0;
 }
