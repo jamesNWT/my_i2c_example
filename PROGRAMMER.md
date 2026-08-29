@@ -103,9 +103,9 @@ The main program can also follow this simple structure:
 ### Toolchain loose-ends
 - picotool had a bug with `picotool info` that was fixed on its master branch but hadn't made it into a release yet. Changed the install from yay to build-from-source. This requires running its install script with sudo.
 - Added `CompileDatabase: build` in .clangd to get around the compile_commands symlink thing.
+- Added rudimentary documentation of the requirements to develop in this REPO to the README.md
+- Added compilation with neovim's :make
 
 ## Current goal
 
-Toolchain loose ends:
-- we should have a command in neovim to quickly recompile and flash our program onto the pico
-- We should have a setup document that describes what the repo depends on in order to do development, and script as much of that setup as possible. 
+Flash the bus scan example onto the PICO.
