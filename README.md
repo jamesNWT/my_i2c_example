@@ -23,6 +23,10 @@ Manually configured toolchain and doing cool things with a PICO using I2C.
   - `Bus XXX Device XXX: ID 2e8a:000a Raspberry Pi Pico` when the device is plugged in and running some code.
 - `ls -l /dev/pico` should shouw a fully permissioned symlink to a file called something like `ttyACM1` or `ttyACM0`, etc. 
 
+### Compiling the firmware
+
+From the repo root, run `mkdir build` `cmake -S source -B build` `cmake --build build`
+
 ### Flashing the pico
 
 `pico load -x /path/to/binary.uf2` when in BOOTSEL mode.
