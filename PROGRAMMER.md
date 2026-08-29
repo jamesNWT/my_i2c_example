@@ -92,7 +92,6 @@ The main program can also follow this simple structure:
   - You can run `fd -e c -e h -x clang-format -i` from the repo root to format all .c and .h files at once.
 - cmake setup with pico-sdk put together. 
   - we had to add `set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)` to tell the cmake try-compile step to skip linking, since our toolchain will depend on linking the implementation of newlib's portability layer with pico_stdlib, which the cmake's test program won't have access to.
-  - symlinked compile_commands.json from build to repo root for clangd support (TODO: this should be scripted on the build or something)
   - called pico-sdk-provided cmake functions in the cmakelists.txt file in order to adjust the meta-build to work for the PICO board.
 - We now have a system that can build the .uf2 file, ready to be flashed onto a PICO!
 
