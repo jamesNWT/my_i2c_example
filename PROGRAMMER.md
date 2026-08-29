@@ -105,6 +105,14 @@ The main program can also follow this simple structure:
 - Added rudimentary documentation of the requirements to develop in this REPO to the README.md
 - Added compilation with neovim's :make
 
+### See bus_scan example working
+- copied the bus_scan example code into my program. 
+- Made a few adjustments for my USB setup (non-UART)
+  - most notably added `stdio_flush(); sleep_ms(50);` to the end of the program to tell the firmware to not exit before tinyusb's queue is empty (otherwise the software may stop executing while it still has messages for the usb CDC in RAM)
 ## Current goal
 
-Flash the bus scan example onto the PICO.
+WHOAMI address read.
+
+## Later TODOs:
+
+- picotool still isn't really working with the -f option to enable re-flashes without needing to physically replug the device.
