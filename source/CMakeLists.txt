@@ -10,13 +10,13 @@ pico_sdk_init()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(i2c i2c.c)
+add_executable(${PROJECT_NAME} main.c)
 
-target_link_libraries(i2c pico_stdlib)
+target_link_libraries(${PROJECT_NAME} pico_stdlib)
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(i2c 0)
-pico_enable_stdio_usb(i2c 1)
+pico_enable_stdio_uart(${PROJECT_NAME} 0)
+pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
-pico_add_extra_outputs(i2c)
+pico_add_extra_outputs(${PROJECT_NAME})
 
