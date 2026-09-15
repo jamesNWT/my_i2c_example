@@ -153,3 +153,11 @@ Current wiring (also drawn in `PROGRAMMER.md`):
 - `../i2c/bus_scan.c` — a copy of the SDK's bus-scan example. Useful as a last-resort reference; prefer
   letting the user write their own scan first.
 - `../pico-sdk-blink/` — a Wokwi-simulator-oriented blink project.
+
+## Datasheets
+
+- **MPU-6000/6050 Register Map** (InvenSense doc RM-MPU-6000A) — `~/Documents/RM-MPU-6000A.pdf`.
+  The authoritative source for register addresses, bit fields, reset values, and scaling (e.g.
+  `WHO_AM_I` = `0x75`, `PWR_MGMT_1` = `0x6B`, accel/gyro data registers from `0x3B`). Point the user at
+  specific sections/pages of it rather than quoting values from memory, and check it before stating
+  any register detail.
