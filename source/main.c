@@ -20,13 +20,14 @@
 
 #define MPU_ADDR 0x68          // acquired from bus scan example
 #define WHO_AM_I_REGISTER 0x75 // acquired from register map doc
+#define I2C_PORT i2c0
 
 /****************************
  * Component Initialization *
  ***************************/
 
 void init_mpu_i2c(uint sda, uint scl, uint baudrate_kHz) {
-  i2c_init(i2c_default, baudrate_kHz * 1000);
+  i2c_init(I2C_PORT, baudrate_kHz * 1000);
   gpio_set_function(scl, GPIO_FUNC_I2C);
   gpio_set_function(sda, GPIO_FUNC_I2C);
   gpio_pull_up(scl);
