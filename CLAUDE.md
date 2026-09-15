@@ -136,7 +136,7 @@ Current wiring (also drawn in `PROGRAMMER.md`):
 - Pico 1 / RP2040: two I2C controllers, `i2c0` and `i2c1`, each mappable to several GPIO pairs
   (SDA on GPIO where `pin % 4 == 0 or 1`; see the RP2040 datasheet pin-function table). GP4/GP5 above
   is the SDK's `i2c_default` — `i2c0`.
-- MPU-6050 breakout boards usually include their own pull-ups and a 3.3 V regulator; the `AD0` pin
+- This breakout has its own 4.7 kΩ pull-ups to 3.3 V and an onboard LDO (see Datasheets); the `AD0` pin
   selects address `0x68` (low) or `0x69` (high). This board answers at **`0x68`**, confirmed by a scan.
 - The Pico's internal pull-ups (`gpio_pull_up`) are weak (~50 kΩ) — fine at 100 kHz on a short bus,
   but a reason for flaky behavior at higher speeds.
@@ -161,3 +161,10 @@ Current wiring (also drawn in `PROGRAMMER.md`):
   `WHO_AM_I` = `0x75`, `PWR_MGMT_1` = `0x6B`, accel/gyro data registers from `0x3B`). Point the user at
   specific sections/pages of it rather than quoting values from memory, and check it before stating
   any register detail.
+- **Breakout board manual** (ShillehTek MPU6050 module) —
+  https://shillehtek.com/blogs/shillehtek-product-manuals/mpu6050-accelerometer-6dof-raspberry-pi-arduino-esp32-i2c-accelerometer.
+  Board-level facts from it: 3–5 V module input via an onboard LDO (the IC itself runs at
+  2.375–3.46 V); **onboard 4.7 kΩ pull-ups on SDA/SCL to the board's 3.3 V rail**; 8 pins —
+  VCC, GND, SCL, SDA, XDA, XCL, AD0, INT. AD0 low → `0x68`, high → `0x69`. XDA/XCL are an auxiliary
+  I2C master bus for an external magnetometer; INT is a programmable interrupt (data ready, motion,
+  FIFO full).
