@@ -10,7 +10,8 @@ To introduce myself to firmware development, I'm working on writing programs for
 
 - RaspberryPi PICO-H 1
 
-- MPU-6050
+- MPU-6500
+  - (It was initially assumed that we had a MPU-6050 chip, and we didn't discover that we have a MPU-6500 until we read the WHO_AM_I register, so there may be some inconsitencies in the documentation before the "WHO_AM_I Register Read" section)
 
 ### Current circuit diagram
 ```ASCII
@@ -28,7 +29,7 @@ To introduce myself to firmware development, I'm working on writing programs for
       ┌──┼────┼─────┼────┼─┐
       │ SDA  SCL   VCC  GND│
       │                    │
-      │      MPU-6050      │
+      │      MPU-6500      │
       └────────────────────┘
 ```
 ## Structure / Architecture
@@ -109,6 +110,14 @@ The main program can also follow this simple structure:
 - copied the bus_scan example code into my program. 
 - Made a few adjustments for my USB setup (non-UART)
   - most notably added `stdio_flush(); sleep_ms(50);` to the end of the program to tell the firmware to not exit before tinyusb's queue is empty (otherwise the software may stop executing while it still has messages for the usb CDC in RAM)
+
+### WHO_AM_I Register read
+- Wrote a function that checks the WHO_AM_I register of the chip via i2c.
+  - This requires first calling i2c_write_blocking since the chip itself has no way of knowing what register you want to read from. The first data byte after the device address in a write operation over i2c sets the register pointer to be equal to that byte, and reads send data from the register pointed to by the register pointer.
+  - Then we call the i2c_read_blocking function to read from register 0x75, obtained from the datasheet.
+- We got an unexpected value here, since the MPU-6050 datasheet says that we expect 0x68, but we in fact got 0x70. 
+  - After adding a debugging-focused wrapper to the read and write calls, we confirmed that our read was correct and it really is 0x70 in the WHO_AM_I register.
+  - It turns out that we actually got a breakout board with a MPU-6500 chip instead of a MPU-6050, which I confirmed by doing some research and seeing that this was a common problem. The breakout board even says MPU-6050 on it, so that's crazy!
 ## Current goal
 
 WHOAMI address read.
