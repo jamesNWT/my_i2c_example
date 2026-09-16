@@ -16,15 +16,17 @@ reality slightly; when it conflicts with what you can observe on disk, trust the
 ## Project purpose
 
 A learning project, not a product. The goal is for the user to learn **I2C** on a Raspberry Pi Pico 1
-(RP2040, no wireless) talking to an **MPU-6050** accel/gyro, while also learning the **bare CMake +
-command-line toolchain** on Arch Linux with nvim (deliberately leaving behind the VS Code Pico
-extension used in the previous project).
+(RP2040, no wireless) talking to the accel/gyro on an "MPU-6050" breakout — the chip on this
+particular board turned out to be an **MPU-6500** (see Hardware notes) — while also learning the
+**bare CMake + command-line toolchain** on Arch Linux with nvim (deliberately leaving behind the
+VS Code Pico extension used in the previous project).
 
 Planned progression — each stage is its own learning milestone, don't skip ahead:
 
 1. ~~Toolchain setup + hello world over **USB CDC** (no UART hardware available).~~ **Done.**
 2. **← current:** I2C bus scan (sweep 7-bit addresses, print an ACK table).
-3. Read a single register: `WHO_AM_I` (MPU-6050 reg `0x75`, expected `0x68`).
+3. Read a single register: `WHO_AM_I` (reg `0x75`). Expected value on this board is **`0x70`**
+   (MPU-6500), *not* the `0x68` an actual MPU-6050 returns.
 4. Stream real-time accel/gyro data.
 5. Something fun driven by the sensor — e.g. orientation-controlled RGB LED.
 
@@ -88,7 +90,7 @@ and the build tree is `build/` at the repo root.
 
 ```sh
 cmake -S source -B build     # configure (existing build/ was configured with Unix Makefiles)
-cmake --build build          # produces build/i2c.elf, build/i2c.uf2, build/i2c.bin
+cmake --build build          # produces build/my_i2c_example.{elf,uf2,bin}
 ```
 
 `.nvim.lua` sets `makeprg` to `cmake --build build`, so `:make` rebuilds from inside nvim.
@@ -96,7 +98,7 @@ cmake --build build          # produces build/i2c.elf, build/i2c.uf2, build/i2c.
 Flashing (no debug probe — BOOTSEL only):
 
 ```sh
-picotool load -x build/i2c.uf2   # -x runs after loading; needs the Pico in BOOTSEL
+picotool load -x build/my_i2c_example.uf2   # -x runs after loading; needs the Pico in BOOTSEL
 # or: hold BOOTSEL while plugging in, then copy the .uf2 onto the RPI-RP2 mass-storage volume
 ```
 
@@ -138,6 +140,16 @@ Current wiring (also drawn in `PROGRAMMER.md`):
   is the SDK's `i2c_default` — `i2c0`.
 - This breakout has its own 4.7 kΩ pull-ups to 3.3 V and an onboard LDO (see Datasheets); the `AD0` pin
   selects address `0x68` (low) or `0x69` (high). This board answers at **`0x68`**, confirmed by a scan.
+- **The chip is an MPU-6500, not an MPU-6050**, despite the board silkscreen. Confirmed 2026-09-15:
+  `WHO_AM_I` (`0x75`) reads `0x70`, the documented MPU-6500 ID; a real 6050 returns `0x68`. Boards of
+  this type are widely built with 6500s or clones in the same package. Consequences:
+  - The I2C address is unchanged (`0x68`/`0x69` via AD0), so the bus scan and all addressing stay valid.
+  - Accel/gyro data still start at `0x3B`, `WHO_AM_I` is still `0x75`, `PWR_MGMT_1` is still `0x6B`.
+  - **`PWR_MGMT_1` resets to `0x01` on the 6500, not `0x40`** — i.e. the 6500 does *not* power up with
+    `SLEEP` set, unlike the 6050. Don't assume a wake-up write is required; verify against the 6500 map.
+  - Self-test, some config bits (`ACCEL_CONFIG2` at `0x1D`, `FCHOICE`), and the temperature formula
+    (`TEMP_degC = (TEMP_OUT - RoomTemp_Offset)/Temp_Sensitivity + 21`) differ from the 6050.
+  - Always check register details against the **MPU-6500** documents below, not the 6050 ones.
 - The Pico's internal pull-ups (`gpio_pull_up`) are weak (~50 kΩ) — fine at 100 kHz on a short bus,
   but a reason for flaky behavior at higher speeds.
 - `stdio_usb_connected()` returns true only once the host asserts DTR, which in practice means "a
@@ -156,11 +168,20 @@ Current wiring (also drawn in `PROGRAMMER.md`):
 
 ## Datasheets
 
-- **MPU-6000/6050 Register Map** (InvenSense doc RM-MPU-6000A) — `~/Documents/RM-MPU-6000A.pdf`.
-  The authoritative source for register addresses, bit fields, reset values, and scaling (e.g.
-  `WHO_AM_I` = `0x75`, `PWR_MGMT_1` = `0x6B`, accel/gyro data registers from `0x3B`). Point the user at
-  specific sections/pages of it rather than quoting values from memory, and check it before stating
-  any register detail.
+Point the user at specific sections/pages of these rather than quoting values from memory, and check
+them before stating any register detail.
+
+**Authoritative for this board (the chip is an MPU-6500):**
+
+- **MPU-6500 Register Map** (RM-MPU-6500A-00, rev 2.1) — `~/Documents/MPU-6500/MPU-6500-Register-Map.pdf`.
+  Register addresses, bit fields, reset values, scaling. Section 3 lists the reset values (all `0x00`
+  except `PWR_MGMT_1` = `0x01` and `WHO_AM_I` = `0x70`); §4.38 describes `WHO_AM_I`. Note the doc
+  distinguishes "MPU-6500 mode" from "MPU-6050 compatible mode" register maps.
+- **MPU-6500 Product Specification** (PS-MPU-6500A-01, rev 1.1) — `~/Documents/MPU-6500/MPU-6500-Datasheet.pdf`.
+  Electrical characteristics, sensitivity/scale factors, and the I2C protocol timing diagrams.
+
+**Board-level (still accurate — it describes the module, which really is the 6050 board design):**
+
 - **Breakout board manual** (ShillehTek MPU6050 module) —
   https://shillehtek.com/blogs/shillehtek-product-manuals/mpu6050-accelerometer-6dof-raspberry-pi-arduino-esp32-i2c-accelerometer.
   Board-level facts from it: 3–5 V module input via an onboard LDO (the IC itself runs at
@@ -168,3 +189,9 @@ Current wiring (also drawn in `PROGRAMMER.md`):
   VCC, GND, SCL, SDA, XDA, XCL, AD0, INT. AD0 low → `0x68`, high → `0x69`. XDA/XCL are an auxiliary
   I2C master bus for an external magnetometer; INT is a programmable interrupt (data ready, motion,
   FIFO full).
+
+**MPU-6050 documents — reference only, for the compatible subset; do not quote as fact for this board:**
+
+- **MPU-6000/6050 Register Map** (RM-MPU-6000A) — `~/Documents/RM-MPU-6000A.pdf`.
+- **MPU-6000/6050 Product Specification** (PS-MPU-6000A) — `~/Documents/PS-MPU-6000A.pdf`. §9.3
+  ("I2C Communications Protocol") has the write-then-repeated-START read byte sequences.
