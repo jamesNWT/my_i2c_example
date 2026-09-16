@@ -2,6 +2,8 @@
 
 Manually configured toolchain and doing cool things with a PICO using I2C.
 
+A dev journal exists at `PROGRAMMER.md` and commits containing LLM-generated text are tagged with claude as co-author.
+
 ## Setup
 
 ### Requirements:
