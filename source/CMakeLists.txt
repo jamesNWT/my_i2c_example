@@ -11,6 +11,7 @@ pico_sdk_init()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(${PROJECT_NAME} main.c)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 
 target_link_libraries(${PROJECT_NAME} pico_stdlib hardware_i2c)
 

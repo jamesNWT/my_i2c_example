@@ -2,10 +2,13 @@
 #include <hardware/i2c.h>
 #include <hardware/structs/io_bank0.h>
 #include <pico/binary_info.h>
+#include <pico/error.h>
 #include <pico/stdio.h>
 #include <pico/stdio_usb.h>
 #include <pico/stdlib.h>
 #include <pico/time.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 /*************************************
@@ -18,20 +21,79 @@
     "Compilation aborted: my_i2c_example requires default i2c pins to be defined"
 #endif
 
-#define MPU_ADDR 0x68          // acquired from bus scan example
-#define WHO_AM_I_REGISTER 0x75 // acquired from register map doc
-#define I2C_PORT i2c0
+#define MPU_ADDR 0x68    // acquired from bus scan example
+#define I2C_PORT i2c0    // the i2c port we're using
+#define MPU_6050_ID 0x68 // What's in the WHO_AM_I register of the MPU-6050
+#define MPU_6500_ID 0x70 // ... and the MPU-6500
+const uint8_t WHO_AM_I_REGISTER = 0x75; // acquired from register map doc
 
 /****************************
  * Component Initialization *
  ***************************/
 
-void init_mpu_i2c(uint sda, uint scl, uint baudrate_kHz) {
+// TODO: Move function to a seperate file
+int i2c_write_blocking_wrapper(const uint8_t *src, size_t len, bool nostop) {
+
+  int ret = i2c_write_blocking(I2C_PORT, MPU_ADDR, src, len, nostop);
+  if (ret < 0 || (size_t)ret != len) {
+    printf("Something went wrong trying to write to the MPU:\n");
+    if (ret == PICO_ERROR_GENERIC) {
+      printf("\twrite operation returned PICO_ERROR_GENERIC\n");
+    } else {
+      printf("\texpected write operation to return %u, got %d\n", len, ret);
+    }
+  }
+  return ret;
+}
+
+// TODO: Move function to a seperate file
+int i2c_read_blocking_wrapper(uint8_t *dst, size_t len, bool nostop) {
+
+  int ret = i2c_read_blocking(I2C_PORT, MPU_ADDR, dst, len, nostop);
+  if (ret < 0 || (size_t)ret != len) {
+    printf("Something went wrong trying to read from the MPU:\n");
+    if (ret == PICO_ERROR_GENERIC) {
+      printf("\tread operation returned PICO_ERROR_GENERIC\n");
+    } else {
+      printf("\texpected read operation to return %u, got %d\n", len, ret);
+    }
+  }
+  return ret;
+}
+
+void init_mpu_i2c_connection(uint sda, uint scl, uint baudrate_kHz) {
   i2c_init(I2C_PORT, baudrate_kHz * 1000);
   gpio_set_function(scl, GPIO_FUNC_I2C);
   gpio_set_function(sda, GPIO_FUNC_I2C);
   gpio_pull_up(scl);
   gpio_pull_up(sda);
+}
+
+int init_mpu(void) {
+  sleep_ms(500); // give the chip time to do its internal boot-up stuff
+  // check connection by reading WHO_AM_I
+  uint8_t chip_id[1];
+  chip_id[0] = 0;
+
+  // the write_blocking function must be called before a read because we need
+  // to tell the chip which register to read from. this sets the chip's
+  // register pointer to WHO_AM_I, which will tell the chip what to send in the
+  // subsequent read.
+  i2c_write_blocking_wrapper(&WHO_AM_I_REGISTER, 1, true);
+  // read the register
+  i2c_read_blocking_wrapper(chip_id, 1, true);
+  if (chip_id[0] == MPU_6050_ID) {
+    printf("MPU-6050 detected!\n");
+    return 0;
+  }
+  if (chip_id[0] == MPU_6500_ID) {
+    printf("MPU-6500 detected!\n");
+    return 0;
+  }
+  printf("Error: got unexpected value of %d from WHO_AM_I mpu register read "
+         "attempt",
+         chip_id[0]);
+  return 1;
 }
 
 /*********************
@@ -66,7 +128,12 @@ int main() {
 
   // This example will use I2C0 on the default SDA and SCL pins (GP4, GP5 on a
   // Pico) and use a baud rate of 400kHz.
-  init_mpu_i2c(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, 400);
+  init_mpu_i2c_connection(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN,
+                          400);
+  int ret = init_mpu();
+  if (ret != 0) {
+    printf("Successfully read WHO_AM_I\n");
+  }
 
   printf("\nI2C Bus Scan\n");
   printf("   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
