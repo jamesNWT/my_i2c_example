@@ -118,9 +118,10 @@ The main program can also follow this simple structure:
 - We got an unexpected value here, since the MPU-6050 datasheet says that we expect 0x68, but we in fact got 0x70. 
   - After adding a debugging-focused wrapper to the read and write calls, we confirmed that our read was correct and it really is 0x70 in the WHO_AM_I register.
   - It turns out that we actually got a breakout board with a MPU-6500 chip instead of a MPU-6050, which I confirmed by doing some research and seeing that this was a common problem. The breakout board even says MPU-6050 on it, so that's crazy!
+
 ## Current goal
 
-WHOAMI address read.
+Get datastream from accelerometer and/or gyroscope visible in tio.
 
 ## Later TODOs:
 
